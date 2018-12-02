@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/nusmods-planner/precache-manifest.4293c84e5e3b13d4a0c76211e67b21c5.js"
+  "/nusmods-planner/precache-manifest.182a9641b0b007ccf7887fb390bf4fb3.js"
 );
 
 workbox.clientsClaim();

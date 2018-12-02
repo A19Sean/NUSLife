@@ -8,19 +8,19 @@ self.__precacheManifest = [
     "url": "/nusmods-planner/static/js/runtime~main.9c21c06a.js"
   },
   {
-    "revision": "6fe1705232c31945bf71",
-    "url": "/nusmods-planner/static/js/main.6fe17052.chunk.js"
+    "revision": "ac0297b88f0085e2b103",
+    "url": "/nusmods-planner/static/js/main.ac0297b8.chunk.js"
   },
   {
     "revision": "2dd891c45704ef41f3d5",
     "url": "/nusmods-planner/static/js/1.2dd891c4.chunk.js"
   },
   {
-    "revision": "6fe1705232c31945bf71",
-    "url": "/nusmods-planner/static/css/main.b2001008.chunk.css"
+    "revision": "ac0297b88f0085e2b103",
+    "url": "/nusmods-planner/static/css/main.97e49471.chunk.css"
   },
   {
-    "revision": "2de56cd2af640b073dfb063ae0af657a",
+    "revision": "2fba2c23a09872c0f9fe02aaa965f2b9",
     "url": "/nusmods-planner/index.html"
   }
 ];
