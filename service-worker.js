@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/nusmods-planner/precache-manifest.72c18fc36b8fab4fc8473dafacab58ca.js"
+  "/NUSMods-Planner/precache-manifest.cfe980c51c5694d38ed680167c34bfc6.js"
 );
 
 workbox.clientsClaim();
@@ -28,7 +28,7 @@ self.__precacheManifest = [].concat(self.__precacheManifest || []);
 workbox.precaching.suppressWarnings();
 workbox.precaching.precacheAndRoute(self.__precacheManifest, {});
 
-workbox.routing.registerNavigationRoute("/nusmods-planner/index.html", {
+workbox.routing.registerNavigationRoute("/NUSMods-Planner/index.html", {
   
   blacklist: [/^\/_/,/\/[^\/]+\.[^\/]+$/],
 });
