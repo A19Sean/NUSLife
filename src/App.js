@@ -27,9 +27,14 @@ class App extends Component {
         this.setState({sem: event.target.value});
     } else {
         this.setState((state, props) => ({
-        yourmods: state.yourmods + [state.info.ModuleCode],
+        yourmods: state.yourmods.concat([{
+          year: 2018,
+          sem: state.sem,
+          mod: state.info.ModuleCode
+        }]),
         mcs: state.mcs - parseInt(state.info.ModuleCredit)
       }));
+      console.log(this.state.yourmods);
     }
   }
 
@@ -83,8 +88,9 @@ class App extends Component {
 
     return (
       <div className="App">
-        {this.state.yourmods} <br/>
-        {this.state.mcs}<br/>
+        Your Mods: <tr><th>Year</th><th>Semester</th><th>Module</th></tr>
+        {this.state.yourmods.map(mod => <tr><td>{mod.year}</td><td>{mod.sem}</td><td>{mod.mod}</td></tr>)} <br/>
+        Your MCs: {this.state.mcs}<br/>
         <form onSubmit={this.handleSubmit} onChange={this.handleChange}>
           Module Code:
           <input type="text" name="name" />
@@ -93,7 +99,6 @@ class App extends Component {
           Semester: 
           <input onClick={this.handleClick} type="radio" name="Semester" value="1"/> 1
           <input onClick={this.handleClick} type="radio" name="Semester" value="2"/> 2 <br/>
-          
           
           {this.state.autocomplete.map(result => <p>{result}</p>)}
         </form>
