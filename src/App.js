@@ -12,7 +12,7 @@ class App extends Component {
                   modules: [],
                   info: {},
                   yourmods: [],
-                  mcs: 180,
+                  mcs: 0,
                   autocomplete: [],
                   error: ""
                 };
@@ -26,15 +26,25 @@ class App extends Component {
     if(event.target.type === "radio") {
         this.setState({sem: event.target.value});
     } else {
+        const preclusions = this.state.info.Preclusion.match(/[A-Z]{2,}[0-9]{4}[A-Z]*/g);
+        // Checks for terminating conditions
+        const mod = this.state.info.ModuleCode;
+        if(this.state.yourmods.filter(elem => elem.mod === mod).length > 0) {
+          this.setState({error: "No Duplicates"});
+          return undefined;
+        } else if(this.state.yourmods.filter(elem => preclusions.indexOf(elem.mod) >= 0).length > 0) {
+          this.setState({error: "Already precluded"});
+          return undefined;
+        }
+
         this.setState((state, props) => ({
         yourmods: state.yourmods.concat([{
           year: 2018,
           sem: state.sem,
-          mod: state.info.ModuleCode
+          mod: mod
         }]),
-        mcs: state.mcs - parseInt(state.info.ModuleCredit)
+        mcs: state.mcs + parseInt(state.info.ModuleCredit)
       }));
-      console.log(this.state.yourmods);
     }
   }
 
@@ -96,6 +106,7 @@ class App extends Component {
           <input type="text" name="name" />
           <input type="submit" value="Submit" />
           <button onClick={this.handleClick}>Add Module</button> <br/>
+          <span style={{color: "red"}}>{this.state.error}</span><br/>
           Semester: 
           <input onClick={this.handleClick} type="radio" name="Semester" value="1"/> 1
           <input onClick={this.handleClick} type="radio" name="Semester" value="2"/> 2 <br/>
