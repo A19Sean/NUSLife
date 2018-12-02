@@ -2,7 +2,7 @@
   "name": "nusmods-planner",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://ZiHawkEye.github.io/nusmods-planner",
+  "homepage": "https://ZiHawkEye.github.io/NUSMods-Planner",
   "dependencies": {
     "gh-pages": "^2.0.1",
     "react": "^16.6.3",

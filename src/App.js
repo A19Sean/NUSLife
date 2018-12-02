@@ -59,7 +59,7 @@ class App extends Component {
   }
 
   componentDidMount() {
-    axios.get("http://api.nusmods.com/2018-2019/moduleList.json")
+    axios.get("https://api.nusmods.com/2018-2019/moduleList.json")
     .then((response) => {
       this.setState({
         modules: response.data
