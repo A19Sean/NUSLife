@@ -4,19 +4,19 @@ self.__precacheManifest = [
     "url": "/NUSMods-Planner/static/js/runtime~main.6b2175ab.js"
   },
   {
-    "revision": "7811b05ef182fb68ac70",
-    "url": "/NUSMods-Planner/static/js/main.7811b05e.chunk.js"
+    "revision": "8d4a382ddcd8185e8176",
+    "url": "/NUSMods-Planner/static/js/main.8d4a382d.chunk.js"
   },
   {
     "revision": "a9a075c8ddb70873378b",
     "url": "/NUSMods-Planner/static/js/1.a9a075c8.chunk.js"
   },
   {
-    "revision": "7811b05ef182fb68ac70",
+    "revision": "8d4a382ddcd8185e8176",
     "url": "/NUSMods-Planner/static/css/main.8a6392e0.chunk.css"
   },
   {
-    "revision": "bf51431483a3aa78a87830a2c9d3d62d",
+    "revision": "26e589c10d8d9a88d731b60999d2ccfb",
     "url": "/NUSMods-Planner/index.html"
   }
 ];
