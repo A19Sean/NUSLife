@@ -1,14 +1,14 @@
 {
-  "main.css": "/nusmods-planner/static/css/main.9df7b8ad.chunk.css",
-  "main.js": "/nusmods-planner/static/js/main.4cdb1785.chunk.js",
-  "main.js.map": "/nusmods-planner/static/js/main.4cdb1785.chunk.js.map",
-  "static/js/1.83daaf0a.chunk.js": "/nusmods-planner/static/js/1.83daaf0a.chunk.js",
-  "static/js/1.83daaf0a.chunk.js.map": "/nusmods-planner/static/js/1.83daaf0a.chunk.js.map",
+  "main.css": "/nusmods-planner/static/css/main.b2b5f4fb.chunk.css",
+  "main.js": "/nusmods-planner/static/js/main.f3f69198.chunk.js",
+  "main.js.map": "/nusmods-planner/static/js/main.f3f69198.chunk.js.map",
+  "static/js/1.aeace3fc.chunk.js": "/nusmods-planner/static/js/1.aeace3fc.chunk.js",
+  "static/js/1.aeace3fc.chunk.js.map": "/nusmods-planner/static/js/1.aeace3fc.chunk.js.map",
   "runtime~main.js": "/nusmods-planner/static/js/runtime~main.9c21c06a.js",
   "runtime~main.js.map": "/nusmods-planner/static/js/runtime~main.9c21c06a.js.map",
   "static/media/logo.svg": "/nusmods-planner/static/media/logo.5d5d9eef.svg",
-  "static/css/main.9df7b8ad.chunk.css.map": "/nusmods-planner/static/css/main.9df7b8ad.chunk.css.map",
+  "static/css/main.b2b5f4fb.chunk.css.map": "/nusmods-planner/static/css/main.b2b5f4fb.chunk.css.map",
   "index.html": "/nusmods-planner/index.html",
-  "precache-manifest.a0508248f9b2e171f6b4ea5b28c3095e.js": "/nusmods-planner/precache-manifest.a0508248f9b2e171f6b4ea5b28c3095e.js",
+  "precache-manifest.085b86b14bbea4035c71ba2a27c1330d.js": "/nusmods-planner/precache-manifest.085b86b14bbea4035c71ba2a27c1330d.js",
   "service-worker.js": "/nusmods-planner/service-worker.js"
 }
