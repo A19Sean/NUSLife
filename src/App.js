@@ -3,6 +3,8 @@ import './App.css';
 const axios = require('axios');
 
 // Check for prereqs, preclusion, mcs, basic requirements
+// Delete mods, sort chronologically
+// Build prereq tree
 
 class App extends Component {
   constructor(props) {
@@ -26,8 +28,10 @@ class App extends Component {
   filterObjProps(blacklist, obj) {    
     // Gets rid of unwanted object properties
     if(typeof obj === "object") {
-      blacklist.map(prop => delete obj[prop]);
-      return obj;
+      // Makes a copy of the object and modifies it
+      const temp = JSON.parse(JSON.stringify(obj));
+      blacklist.map(prop => delete temp[prop]);
+      return temp;
     } else{
       return obj;
     }
@@ -55,7 +59,9 @@ class App extends Component {
   getCurrMods() {
     var currmods = [];
       for(var year in this.state.yourmods) {
-        currmods = currmods.concat(this.state.yourmods[year]["Sem 1"].concat(this.state.yourmods[year]["Sem 2"]));
+        const first = this.state.yourmods[year]["Sem 1"].map(mod => mod.name);
+        const second = this.state.yourmods[year]["Sem 2"].map(mod => mod.name);
+        currmods = currmods.concat(first.concat(second));
       }
     return currmods;
   }
@@ -64,6 +70,7 @@ class App extends Component {
     return currmods.filter(currmod => currmod === mod).length > 0;
   }
   
+  // Parses objs to return a bool value(prerequisites, preclusions)
   parse(obj, currmods) {
     if(typeof obj !== "object") {
       return currmods.indexOf(obj) >= 0;
@@ -84,6 +91,22 @@ class App extends Component {
     return prereqs == null ? true : this.parse(prereqs, currmods);
   }
 
+  addMod(mod, sem, year) {
+    const temp = JSON.parse(JSON.stringify(this.state.yourmods));
+
+    if(temp[year] === undefined) {
+      temp[year] = {"Sem 1": [], "Sem 2": []};
+    }
+    temp[year][sem] = temp[year][sem].concat([{"name": mod, "mcs": this.state.info.ModuleCredit}]);
+    
+    // Updates yourmods, mcs, and clears error
+    this.setState((state, props) => ({
+      yourmods: temp,
+      mcs: state.mcs + parseInt(state.info.ModuleCredit),
+      error: ""
+    })); 
+  }
+
   handleClick(event) {
     if(event.target.type === "submit") {
       // If submit button is clicked
@@ -91,11 +114,9 @@ class App extends Component {
         this.setState({error: "No mod selected"});
         return undefined;
       }
-
-      const temp = this.state.yourmods;
-      const mod = this.state.info.ModuleCode;
       const year = this.state.year;
       const sem = "Sem " + this.state.sem;
+      const mod = this.state.info.ModuleCode;
       const currmods = this.getCurrMods();
 
       // Checks for terminating conditions
@@ -111,17 +132,7 @@ class App extends Component {
       }
       
       // Adds mod to yourmods
-      if(temp[year] === undefined) {
-        temp[year] = {"Sem 1": [], "Sem 2": []};
-      }
-      temp[year][sem] = temp[year][sem].concat([mod]);
-      
-      // Updates yourmods, mcs, and clears error
-      this.setState((state, props) => ({
-        yourmods: temp,
-        mcs: state.mcs + parseInt(state.info.ModuleCredit),
-        error: ""
-      })); 
+      this.addMod(mod, sem, year);
     } else if(event.target.tagName === "OPTION") {
       // If option is clicked, identify the element id
       const parent = event.target.parentNode.id
@@ -129,6 +140,12 @@ class App extends Component {
         this.setState({sem: event.target.value});
       } else if(parent === "select-year") {
         this.setState({year: event.target.value});
+        axios.get(`https://api.nusmods.com/${event.target.value}/moduleList.json`)
+        .then((response) => {
+          this.setState({
+            modules: response.data
+          })
+        });
       }
     }
   }
@@ -161,27 +178,44 @@ class App extends Component {
         info: {},
         error: "Could not find module"
       });
-    })
+    });
     event.preventDefault();
   }
 
   componentDidMount() {
-    axios.get("https://api.nusmods.com/2018-2019/moduleList.json")
+    axios.get(`https://api.nusmods.com/${this.state.year}/moduleList.json`)
     .then((response) => {
       this.setState({
         modules: response.data
       })
-    })
+    });
+  }
+
+  delMod(mod, mcs, sem, year) {
+    console.log(mod, mcs, sem, year);
+    const temp = JSON.parse(JSON.stringify(this.state.yourmods));
+    temp[year][sem] = temp[year][sem].filter(elem => elem.name !== mod);
+    this.setState((state, props) => ({
+      yourmods: temp,
+      mcs: state.mcs - mcs
+    }));
+  }
+
+  makePlan(obj, props) {
+    // Converts a plan object into html
+    if(obj.constructor === Array) {
+      return obj.map(elem => <tr><td><button onClick={() => this.delMod(elem.name, elem.mcs, props[1], props[0])}>{elem.name}</button></td></tr>);
+    } else {
+      return Object.keys(obj).map(key => <tr><td>{key}</td> <td>{this.makePlan(obj[key], props.concat([key]))}</td> </tr>);
+    }
   }
 
   render() {
-    
-    
     return (
       <div className="App">
         <div>
           Your Mods: 
-          {this.convert(this.state.yourmods)} <br/>
+          {this.makePlan(this.state.yourmods, [])} <br/>
           Your MCs: {this.state.mcs}<br/>
         </div>
         <div>
@@ -197,14 +231,15 @@ class App extends Component {
             </select>
             Year:
             <select id="select-year" onClick={this.handleClick}>
-              {this.range(19).map(i => (<option value={(i + 2000) +  "-" + (i + 2001)}>{(i + 2000) +  "-" + (i + 2001)}</option>))}
+              {this.range(20).map(i => (<option value={(i + 2000) +  "-" + (i + 2001)}>{(i + 2000) +  "-" + (i + 2001)}</option>))}
             </select>
             <br/>
             <span style={{color: "red"}}>{this.state.error}</span>
             {this.state.autocomplete.map(result => <p>{result}</p>)}
           </form>
-          {this.convert(this.filterObjProps(["ModmavenTree", "History", "Timetable", "LecturePeriods", "TutorialPeriods", "CorsBiddingStats", "Workload"],
+          {this.convert(this.filterObjProps(["LockedModules", "ParsedPreclusion", "ParsedPrerequisite", "ModmavenTree", "History", "Timetable", "LecturePeriods", "TutorialPeriods", "CorsBiddingStats", "Workload"],
                                            this.state.info))}
+          
         </div>
       </div>
     );
