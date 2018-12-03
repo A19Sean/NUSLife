@@ -23,6 +23,35 @@ class App extends Component {
     this.handleClick = this.handleClick.bind(this);
   }
 
+  filterObjProps(blacklist, obj) {    
+    // Gets rid of unwanted object properties
+    if(typeof obj === "object") {
+      blacklist.map(prop => delete obj[prop]);
+      return obj;
+    } else{
+      return obj;
+    }
+  }
+  
+  // Converts from object literal to html syntax
+  convert(obj) {
+    if(typeof obj !== "object") {
+      return obj;
+    } else if(obj.constructor === Array) {
+      return obj.map(elem => <tr><td>{this.convert(elem)}</td></tr>);
+    } else {
+      return Object.keys(obj).map(key => <tr><td>{key}</td> <td>{this.convert(obj[key])}</td> </tr>);
+    }
+  }
+
+  range(n) {
+    const temp = [];
+    for(var i = 0; i < n; i++) {
+      temp[i] = i;
+    }
+    return temp;
+  }
+
   getCurrMods() {
     var currmods = [];
       for(var year in this.state.yourmods) {
@@ -47,12 +76,12 @@ class App extends Component {
 
   checkPreclusion(currmods) {
     const preclusions = this.state.info.ParsedPreclusion;
-    return this.parse(preclusions, currmods);
+    return preclusions == null ? false : this.parse(preclusions, currmods);
   }
   
   checkPrereqs(currmods) {
     const prereqs = this.state.info.ParsedPrerequisite;
-    return this.parse(prereqs, currmods);
+    return prereqs == null ? true : this.parse(prereqs, currmods);
   }
 
   handleClick(event) {
@@ -144,37 +173,9 @@ class App extends Component {
       })
     })
   }
-  
-  filterObjProps(blacklist, obj) {    
-    // Gets rid of unwanted object properties
-    if(typeof obj === "object") {
-      blacklist.map(prop => delete obj[prop]);
-      return obj;
-    } else{
-      return obj;
-    }
-  }
-
-  convert(obj) {
-    if(typeof obj !== "object") {
-      return obj;
-    } else if(obj.constructor === Array) {
-      return obj.map(elem => <tr><td>{this.convert(elem)}</td></tr>);
-    } else {
-      return Object.keys(obj).map(key => <tr><td>{key}</td> <td>{this.convert(obj[key])}</td> </tr>);
-    }
-  }
-
-  range(n) {
-    const temp = [];
-    for(var i = 0; i < n; i++) {
-      temp[i] = i;
-    }
-    return temp;
-  }
 
   render() {
-    // Converts from object literal to html syntax
+    
     
     return (
       <div className="App">
@@ -189,7 +190,6 @@ class App extends Component {
             <input type="text" name="name" />
             <input type="submit" value="Search" />
             <button id="add-mod" onClick={this.handleClick}>Add Module</button> <br/>
-            
             Semester: 
             <select id="select-sem" onClick={this.handleClick}>
               <option value="1">1</option>
