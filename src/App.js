@@ -9,9 +9,10 @@ class App extends Component {
     super(props);
     this.state = {value: '',
                   sem: '1',
+                  year: '2018-2019',
                   modules: [],
                   info: {},
-                  yourmods: [],
+                  yourmods: {},
                   mcs: 0,
                   autocomplete: [],
                   error: ""
@@ -23,28 +24,42 @@ class App extends Component {
   }
 
   handleClick(event) {
-    if(event.target.type === "radio") {
+    if(event.target.type === "submit") {
+      const preclusions = this.state.info.Preclusion.match(/[A-Z]{2,}[0-9]{4}[A-Z]*/g);
+      const temp = this.state.yourmods;
+      const mod = this.state.info.ModuleCode;
+      const year = this.state.year;
+      const sem = "Sem " + this.state.sem;
+      var currmods = [];
+      for(var year in this.state.yourmods) {
+        currmods = currmods.concat(this.state.yourmods[year]["Sem 1"] + this.state.yourmods[year]["Sem 2"]);
+      }
+      // Checks for terminating conditions
+      if(currmods.filter(currmod => currmod === mod).length > 0) {
+        this.setState({error: "No Duplicates"});
+        return undefined;
+      } else if(currmods.filter(currmod => preclusions.indexOf(currmod) >= 0).length > 0) {
+        this.setState({error: "Already precluded"});
+        return undefined;
+      }
+      
+      if(temp[year] === undefined) {
+        temp[year] = {"Sem 1": [], "Sem 2": []};
+      }
+      temp[year][sem] = temp[year][sem].concat([mod]);
+      
+      this.setState((state, props) => ({
+        yourmods: temp,
+        mcs: state.mcs + parseInt(state.info.ModuleCredit),
+        error: ""
+      })); 
+    } else if(event.target.tagName === "OPTION") {
+      const parent = event.target.parentNode.id
+      if(parent === "select-sem") {
         this.setState({sem: event.target.value});
-    } else {
-        const preclusions = this.state.info.Preclusion.match(/[A-Z]{2,}[0-9]{4}[A-Z]*/g);
-        // Checks for terminating conditions
-        const mod = this.state.info.ModuleCode;
-        if(this.state.yourmods.filter(elem => elem.mod === mod).length > 0) {
-          this.setState({error: "No Duplicates"});
-          return undefined;
-        } else if(this.state.yourmods.filter(elem => preclusions.indexOf(elem.mod) >= 0).length > 0) {
-          this.setState({error: "Already precluded"});
-          return undefined;
-        }
-
-        this.setState((state, props) => ({
-        yourmods: state.yourmods.concat([{
-          year: 2018,
-          sem: state.sem,
-          mod: mod
-        }]),
-        mcs: state.mcs + parseInt(state.info.ModuleCredit)
-      }));
+      } else if(parent === "select-year") {
+        this.setState({year: event.target.value});
+      }
     }
   }
 
@@ -58,7 +73,7 @@ class App extends Component {
   }
 
   handleSubmit(event) {
-    const url = `https://api.nusmods.com/2018-2019/${this.state.sem}/modules/${this.state.value}.json`;
+    const url = `https://api.nusmods.com/${this.state.year}/${this.state.sem}/modules/${this.state.value}.json`;
     axios.get(url)
     .then((response) => {
       this.setState({
@@ -82,38 +97,56 @@ class App extends Component {
     })
   }
   
+  convert(obj) {
+    const blacklist = ["Timetable", "LecturePeriods", "TutorialPeriods", "CorsBiddingStats", "Workload"];
+    if(typeof obj !== "object") {
+      return obj;
+    } else if(obj.constructor === Array) {
+      return obj.map(elem => <tr><td>{this.convert(elem)}</td></tr>);
+    } else {
+      const props = Object.keys(obj).filter(key => blacklist.indexOf(key) === -1);
+      return props.map(key => <tr><td>{key}</td> <td>{this.convert(obj[key])}</td> </tr>);
+    }
+  }
+
+  range(n) {
+    const temp = [];
+    for(var i = 0; i < n; i++) {
+      temp[i] = i;
+    }
+    return temp;
+  }
+
   render() {
     // Converts from object literal to html syntax
-    function convert(obj) {
-      const blacklist = ["Timetable", "LecturePeriods", "TutorialPeriods", "CorsBiddingStats"];
-      if(typeof obj !== "object") {
-        return obj;
-      } else if(obj.constructor === Array) {
-        return obj.map(elem => <tr><td>{convert(elem)}</td></tr>);
-      } else {
-        const props = Object.keys(obj).filter(key => blacklist.indexOf(key) === -1);
-        return props.map(key => <tr><td>{key}</td> <td>{convert(obj[key])}</td> </tr>);
-      }
-    }
-
+    
     return (
       <div className="App">
-        Your Mods: <tr><th>Year</th><th>Semester</th><th>Module</th></tr>
-        {this.state.yourmods.map(mod => <tr><td>{mod.year}</td><td>{mod.sem}</td><td>{mod.mod}</td></tr>)} <br/>
-        Your MCs: {this.state.mcs}<br/>
-        <form onSubmit={this.handleSubmit} onChange={this.handleChange}>
-          Module Code:
-          <input type="text" name="name" />
-          <input type="submit" value="Submit" />
-          <button onClick={this.handleClick}>Add Module</button> <br/>
-          <span style={{color: "red"}}>{this.state.error}</span><br/>
-          Semester: 
-          <input onClick={this.handleClick} type="radio" name="Semester" value="1"/> 1
-          <input onClick={this.handleClick} type="radio" name="Semester" value="2"/> 2 <br/>
-          
-          {this.state.autocomplete.map(result => <p>{result}</p>)}
-        </form>
-        {convert(this.state.info)}
+        <div>
+          Your Mods: 
+          {this.convert(this.state.yourmods)} <br/>
+          Your MCs: {this.state.mcs}<br/>
+        </div>
+        <div>
+          <form onSubmit={this.handleSubmit} onChange={this.handleChange}>
+            Module Code:
+            <input type="text" name="name" />
+            <input type="submit" value="Search" />
+            <button id="add-mod" onClick={this.handleClick}>Add Module</button> <br/>
+            <span style={{color: "red"}}>{this.state.error}</span><br/>
+            Semester: 
+            <select id="select-sem" onClick={this.handleClick}>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+            Year:
+            <select id="select-year" onClick={this.handleClick}>
+              {this.range(19).map(i => (<option value={(i + 2000) +  "-" + (i + 2001)}>{(i + 2000) +  "-" + (i + 2001)}</option>))}
+            </select>
+            {this.state.autocomplete.map(result => <p>{result}</p>)}
+          </form>
+          {this.convert(this.state.info)}
+        </div>
       </div>
     );
   }
