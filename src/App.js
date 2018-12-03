@@ -11,7 +11,7 @@ class App extends Component {
                   sem: '1',
                   year: '2018-2019',
                   modules: [],
-                  info: {},
+                  info: undefined,
                   yourmods: {},
                   mcs: 0,
                   autocomplete: [],
@@ -23,37 +23,78 @@ class App extends Component {
     this.handleClick = this.handleClick.bind(this);
   }
 
+  getCurrMods() {
+    var currmods = [];
+      for(var year in this.state.yourmods) {
+        currmods = currmods.concat(this.state.yourmods[year]["Sem 1"].concat(this.state.yourmods[year]["Sem 2"]));
+      }
+    return currmods;
+  }
+
+  checkDuplicates(mod, currmods) {
+    return currmods.filter(currmod => currmod === mod).length > 0;
+  }
+  
+  parse(obj, currmods) {
+    if(typeof obj !== "object") {
+      return currmods.indexOf(obj) >= 0;
+    } else {
+      const or = obj.or == null ? true : obj.or.reduce((acc, elem) => acc || this.parse(elem, currmods), false);
+      const and = obj.and == null ? true : obj.and.reduce((acc, elem) => acc && this.parse(elem, currmods), true);
+      return or && and;
+    }
+  }
+
+  checkPreclusion(currmods) {
+    const preclusions = this.state.info.ParsedPreclusion;
+    return this.parse(preclusions, currmods);
+  }
+  
+  checkPrereqs(currmods) {
+    const prereqs = this.state.info.ParsedPrerequisite;
+    return this.parse(prereqs, currmods);
+  }
+
   handleClick(event) {
     if(event.target.type === "submit") {
-      const preclusions = this.state.info.Preclusion.match(/[A-Z]{2,}[0-9]{4}[A-Z]*/g);
+      // If submit button is clicked
+      if(this.state.info == null) {
+        this.setState({error: "No mod selected"});
+        return undefined;
+      }
+
       const temp = this.state.yourmods;
       const mod = this.state.info.ModuleCode;
       const year = this.state.year;
       const sem = "Sem " + this.state.sem;
-      var currmods = [];
-      for(var year in this.state.yourmods) {
-        currmods = currmods.concat(this.state.yourmods[year]["Sem 1"] + this.state.yourmods[year]["Sem 2"]);
-      }
+      const currmods = this.getCurrMods();
+
       // Checks for terminating conditions
-      if(currmods.filter(currmod => currmod === mod).length > 0) {
-        this.setState({error: "No Duplicates"});
+      if(this.checkDuplicates(mod, currmods)) {
+        this.setState({error: "No duplicates"});
         return undefined;
-      } else if(currmods.filter(currmod => preclusions.indexOf(currmod) >= 0).length > 0) {
+      } else if(this.checkPreclusion(currmods)) {
         this.setState({error: "Already precluded"});
+        return undefined;
+      } else if(!this.checkPrereqs(currmods)) {
+        this.setState({error: "Lack prerequisites"});
         return undefined;
       }
       
+      // Adds mod to yourmods
       if(temp[year] === undefined) {
         temp[year] = {"Sem 1": [], "Sem 2": []};
       }
       temp[year][sem] = temp[year][sem].concat([mod]);
       
+      // Updates yourmods, mcs, and clears error
       this.setState((state, props) => ({
         yourmods: temp,
         mcs: state.mcs + parseInt(state.info.ModuleCredit),
         error: ""
       })); 
     } else if(event.target.tagName === "OPTION") {
+      // If option is clicked, identify the element id
       const parent = event.target.parentNode.id
       if(parent === "select-sem") {
         this.setState({sem: event.target.value});
@@ -64,26 +105,33 @@ class App extends Component {
   }
 
   handleChange(event) {
-    const value = event.target.value;
+    const value = event.target.value.toUpperCase();
     const modcodes = this.state.modules.map(mod => mod["ModuleCode"]);
     const results = (value === "") ? [] : modcodes.filter(mod => RegExp(value + '+').test(mod)).slice(0,10);
-    this.setState({value: value,
-                  autocomplete: results
-                  });
+    if(event.target.name === "name") {
+      this.setState({
+        value: value,
+        autocomplete: results
+      });
+    }
   }
 
   handleSubmit(event) {
-    const url = `https://api.nusmods.com/${this.state.year}/${this.state.sem}/modules/${this.state.value}.json`;
+    const url = `https://api.nusmods.com/${this.state.year}/modules/${this.state.value}.json`;
+    console.log(url);
     axios.get(url)
     .then((response) => {
       this.setState({
         info: response.data
       });
-      console.log(url);
     })
-    .catch(function (error) {
+    .catch((error) => {
       // handle error
       console.log(error);
+      this.setState({
+        info: {},
+        error: "Could not find module"
+      });
     })
     event.preventDefault();
   }
@@ -97,15 +145,23 @@ class App extends Component {
     })
   }
   
+  filterObjProps(blacklist, obj) {    
+    // Gets rid of unwanted object properties
+    if(typeof obj === "object") {
+      blacklist.map(prop => delete obj[prop]);
+      return obj;
+    } else{
+      return obj;
+    }
+  }
+
   convert(obj) {
-    const blacklist = ["Timetable", "LecturePeriods", "TutorialPeriods", "CorsBiddingStats", "Workload"];
     if(typeof obj !== "object") {
       return obj;
     } else if(obj.constructor === Array) {
       return obj.map(elem => <tr><td>{this.convert(elem)}</td></tr>);
     } else {
-      const props = Object.keys(obj).filter(key => blacklist.indexOf(key) === -1);
-      return props.map(key => <tr><td>{key}</td> <td>{this.convert(obj[key])}</td> </tr>);
+      return Object.keys(obj).map(key => <tr><td>{key}</td> <td>{this.convert(obj[key])}</td> </tr>);
     }
   }
 
@@ -133,7 +189,7 @@ class App extends Component {
             <input type="text" name="name" />
             <input type="submit" value="Search" />
             <button id="add-mod" onClick={this.handleClick}>Add Module</button> <br/>
-            <span style={{color: "red"}}>{this.state.error}</span><br/>
+            
             Semester: 
             <select id="select-sem" onClick={this.handleClick}>
               <option value="1">1</option>
@@ -143,9 +199,12 @@ class App extends Component {
             <select id="select-year" onClick={this.handleClick}>
               {this.range(19).map(i => (<option value={(i + 2000) +  "-" + (i + 2001)}>{(i + 2000) +  "-" + (i + 2001)}</option>))}
             </select>
+            <br/>
+            <span style={{color: "red"}}>{this.state.error}</span>
             {this.state.autocomplete.map(result => <p>{result}</p>)}
           </form>
-          {this.convert(this.state.info)}
+          {this.convert(this.filterObjProps(["ModmavenTree", "History", "Timetable", "LecturePeriods", "TutorialPeriods", "CorsBiddingStats", "Workload"],
+                                           this.state.info))}
         </div>
       </div>
     );
