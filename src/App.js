@@ -5,6 +5,7 @@ const axios = require('axios');
 // Check for prereqs, preclusion, mcs, basic requirements
 // Delete mods, sort chronologically
 // Build prereq tree
+// Some bugs in the ParsedPrerequisite Tree: Should be or but instead it's and eg: MA1521, MA1102R
 
 class App extends Component {
   constructor(props) {
@@ -85,7 +86,8 @@ class App extends Component {
       this.setState({
         value: mod,
         year: year,
-        info: response.data
+        info: response.data,
+        // error: ""
       });
     })
     .catch((error) => {
@@ -99,7 +101,6 @@ class App extends Component {
   }
 
   modMavenTree(obj) {
-    console.log(JSON.stringify(obj));
     // Parses boolTree objs to return a html tree
     if(typeof obj !== "object") {
       return <tr><td><button onClick={() => this.search(this.state.year, obj)}>{obj}</button></td></tr>;
@@ -116,14 +117,15 @@ class App extends Component {
     if(typeof obj !== "object") {
       return currmods.indexOf(obj) >= 0;
     } else {
-      const or = obj.or == null ? true : obj.or.reduce((acc, elem) => acc || this.parse(elem, currmods), false);
-      const and = obj.and == null ? true : obj.and.reduce((acc, elem) => acc && this.parse(elem, currmods), true);
+      const or = obj.or == null ? true : obj.or.reduce((acc, elem) => acc || this.parseBoolTree(elem, currmods), false);
+      const and = obj.and == null ? true : obj.and.reduce((acc, elem) => acc && this.parseBoolTree(elem, currmods), true);
       return or && and;
     }
   }
 
   checkPreclusion(currmods) {
     const preclusions = this.state.info.ParsedPreclusion;
+    console.log(preclusions, currmods);
     return preclusions == null ? false : this.parseBoolTree(preclusions, currmods);
   }
   
@@ -139,7 +141,6 @@ class App extends Component {
   addMod(mod, sem, year) {
     const currmods = this.getCurrMods();
     const temp = JSON.parse(JSON.stringify(this.state.yourmods));
-
     // Checks for terminating conditions
     if(this.checkDuplicates(mod, currmods)) {
       this.setState({error: "No duplicates"});
