@@ -2,23 +2,32 @@ import React, { Component } from 'react';
 import './App.css';
 const axios = require('axios');
 
-// Check for prereqs, preclusion, mcs, basic requirements
-// Delete mods, sort chronologically
-// Build prereq tree
+// TODO
+// Check for prereqs, preclusion, mcs(overloading), basic requirements, mod mapping
+// Other programmes besides mods eg SEP, UTCP
+// Sort schedule chronologically
 // Some bugs in the ParsedPrerequisite Tree: Should be or but instead it's and eg: MA1521, MA1102R
+// Overload indicator
+// Mod history
+// Keyboard shortcuts
+// Test for dead links
+// Build entire prereq tree from top down
+// Tags and sharing
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {value: 'Search',
+    this.state = {value: 'Search', // state of search bar
                   sem: '1',
                   year: '2018-2019',
-                  modules: [],
-                  info: undefined,
-                  yourmods: {},
+                  modules: [], // stores all modules
+                  info: undefined, // state of search result
+                  preReqTree: {}, // contains preReqTree obj
+                  history: [], // contains history of searched modules
+                  yourmods: {}, // contains scheduled modules
                   mcs: 0,
-                  autocomplete: [],
-                  error: ""
+                  autocomplete: [], // state of autocomplete suggestions
+                  error: "" // displays all errors
                 };
 
     this.handleChange = this.handleChange.bind(this);
@@ -26,6 +35,7 @@ class App extends Component {
     this.handleClick = this.handleClick.bind(this);
     this.selectSem = this.selectSem.bind(this);
     this.selectYear = this.selectYear.bind(this);
+    this.preReqTree = this.preReqTree.bind(this);
   }
 
   range(n) {
@@ -36,8 +46,8 @@ class App extends Component {
     return temp;
   }
 
+  // Gets rid of unwanted object properties
   filterObjProps(blacklist, obj) {    
-    // Gets rid of unwanted object properties
     if(typeof obj === "object") {
       // Makes a copy of the object and modifies it
       const temp = JSON.parse(JSON.stringify(obj));
@@ -59,8 +69,8 @@ class App extends Component {
     }
   }
 
+  // Converts a plan object into html
   makePlan(obj, props) {
-    // Converts a plan object into html
     if(obj.constructor === Array) {
       return obj.map(elem => <tr><td><button onClick={() => this.delMod(elem.name, elem.mcs, props[1], props[0])}>{elem.name}</button></td></tr>);
     } else {
@@ -87,7 +97,7 @@ class App extends Component {
         value: mod,
         year: year,
         info: response.data,
-        // error: ""
+        autocomplete: []
       });
     })
     .catch((error) => {
@@ -100,8 +110,8 @@ class App extends Component {
     });
   }
 
+  // Parses boolTree objs to return a html tree
   modMavenTree(obj) {
-    // Parses boolTree objs to return a html tree
     if(typeof obj !== "object") {
       return <tr><td><button onClick={() => this.search(this.state.year, obj)}>{obj}</button></td></tr>;
     } else if(obj.constructor === Array) {
@@ -110,6 +120,56 @@ class App extends Component {
       const replace = key => (key === "or" ? "Either of" : key === "and" ? "All of" : key);
       return Object.keys(obj).map(key => <tr><td>{replace(key)}</td> <td>{this.modMavenTree(obj[key])}</td> </tr>);
     }
+  }
+
+  // Builds entire prereq tree and updates state
+  preReqTree() {
+    const mod = this.state.info.ModuleCode;
+    const year = this.state.year;
+
+    function getPrereqs(mod) {
+      if(mod === undefined) {
+        return undefined;
+      }
+      
+      const url = `https://api.nusmods.com/${year}/modules/${mod}.json`;
+      
+      return axios.get(url)
+      .then(response => response.ParsedPrerequisite)
+      .catch((error) => {
+        return undefined;
+      });
+    }
+    
+    function buildTree(mod) {
+      return getPrereqs(mod)
+      .then(prTree => {
+        console.log(prTree);
+        if(prTree !== undefined) {
+          // iterates on bool operator keys "or" and "and"
+          return Promise.all(Object.keys(prTree).map(boolOp => {
+            Promise.all(prTree[boolOp].map(this.buildTree))
+            .then(prArray => {
+              prTree[boolOp] = prArray;
+            });
+          }))
+          .then(result => {
+            prTree["mod"] = mod;
+            console.log(prTree);
+          })
+          .resolve(prTree);
+        } else{
+          return mod;
+        }
+      });
+    }
+
+    buildTree(mod)
+    .then(result => {
+      this.setState({
+        preReqTree: result
+      });
+    });
   }
 
   // Parses boolTree objs to return a bool value(prerequisites, preclusions)
@@ -125,7 +185,6 @@ class App extends Component {
 
   checkPreclusion(currmods) {
     const preclusions = this.state.info.ParsedPreclusion;
-    console.log(preclusions, currmods);
     return preclusions == null ? false : this.parseBoolTree(preclusions, currmods);
   }
   
@@ -247,6 +306,9 @@ class App extends Component {
             <input type="text" name="name" value={this.state.value} onChange={this.handleChange}/>
             <input type="submit" value="Search" />
             <button id="add-mod" onClick={this.handleClick}>Add Module</button> <br/>
+           {this.state.info !== undefined 
+              ? <button id="build-tree" onClick={this.preReqTree}>Build Tree</button>
+              : ""} <br/>
             Semester: 
             <select id="select-sem" onClick={this.selectSem}>
               <option value="1">1</option>
@@ -258,11 +320,12 @@ class App extends Component {
             </select>
             <br/>
             <span style={{color: "red"}}>{this.state.error}</span>
-            {this.state.autocomplete.map(result => <p>{result}</p>)}
+            {this.state.autocomplete.map(result => <p onClick={() => this.search(this.state.year, result)}>{result}</p>)}
           </form>
           {this.convert(this.filterObjProps(unwantedProps,
                                            this.state.info))}
           {this.modMavenTree(mmTree)}
+          {this.modMavenTree(this.state.preReqTree)}
         </div>
       </div>
     );
