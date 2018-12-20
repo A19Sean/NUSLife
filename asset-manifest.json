@@ -1,13 +1,13 @@
 {
-  "main.css": "/NUSMods-Planner/static/css/main.e5891372.chunk.css",
-  "main.js": "/NUSMods-Planner/static/js/main.dcd6b321.chunk.js",
-  "main.js.map": "/NUSMods-Planner/static/js/main.dcd6b321.chunk.js.map",
-  "static/js/1.07bc005d.chunk.js": "/NUSMods-Planner/static/js/1.07bc005d.chunk.js",
-  "static/js/1.07bc005d.chunk.js.map": "/NUSMods-Planner/static/js/1.07bc005d.chunk.js.map",
-  "runtime~main.js": "/NUSMods-Planner/static/js/runtime~main.6b2175ab.js",
-  "runtime~main.js.map": "/NUSMods-Planner/static/js/runtime~main.6b2175ab.js.map",
-  "static/css/main.e5891372.chunk.css.map": "/NUSMods-Planner/static/css/main.e5891372.chunk.css.map",
-  "index.html": "/NUSMods-Planner/index.html",
-  "precache-manifest.f6575a38d3c0f69b4a560589c8489260.js": "/NUSMods-Planner/precache-manifest.f6575a38d3c0f69b4a560589c8489260.js",
-  "service-worker.js": "/NUSMods-Planner/service-worker.js"
+  "main.css": "/NUSLife/static/css/main.e5891372.chunk.css",
+  "main.js": "/NUSLife/static/js/main.b8547763.chunk.js",
+  "main.js.map": "/NUSLife/static/js/main.b8547763.chunk.js.map",
+  "static/js/1.07bc005d.chunk.js": "/NUSLife/static/js/1.07bc005d.chunk.js",
+  "static/js/1.07bc005d.chunk.js.map": "/NUSLife/static/js/1.07bc005d.chunk.js.map",
+  "runtime~main.js": "/NUSLife/static/js/runtime~main.7b10db19.js",
+  "runtime~main.js.map": "/NUSLife/static/js/runtime~main.7b10db19.js.map",
+  "static/css/main.e5891372.chunk.css.map": "/NUSLife/static/css/main.e5891372.chunk.css.map",
+  "index.html": "/NUSLife/index.html",
+  "precache-manifest.7b89679000c123c32e188e8e25554a6e.js": "/NUSLife/precache-manifest.7b89679000c123c32e188e8e25554a6e.js",
+  "service-worker.js": "/NUSLife/service-worker.js"
 }
