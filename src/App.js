@@ -8,7 +8,6 @@ const axios = require('axios');
 // Sort schedule chronologically
 // Some bugs in the ParsedPrerequisite Tree: Should be or but instead it's and eg: MA1521, MA1102R
 // Overload indicator
-// Mod history
 // Keyboard shortcuts
 // Test for dead links
 // Build entire prereq tree from top down
@@ -93,12 +92,13 @@ class App extends Component {
     console.log(url);
     axios.get(url)
     .then((response) => {
-      this.setState({
+      this.setState((state, props) => ({
         value: mod,
         year: year,
         info: response.data,
-        autocomplete: []
-      });
+        autocomplete: [],
+        history: state.history.concat([mod]).slice(-10)
+      }));
     })
     .catch((error) => {
       // handle error
@@ -326,6 +326,10 @@ class App extends Component {
                                            this.state.info))}
           {this.modMavenTree(mmTree)}
           {this.modMavenTree(this.state.preReqTree)}
+        </div>
+        <div>
+          History:
+          {this.state.history.map(result => <p onClick={() => this.search(this.state.year, result)}>{result}</p>)}
         </div>
       </div>
     );
