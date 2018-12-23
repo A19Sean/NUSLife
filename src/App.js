@@ -45,16 +45,19 @@ class App extends Component {
     if (typeof obj !== "object") {
       return obj;
     } else if (obj.constructor === Array) {
-      return obj.map(elem => (
-        <tr>
-          <td>{this.convertObj(elem)}</td>
-        </tr>
-      ));
+      return obj.map(elem => {
+        return this.convertObj(elem);
+      });
     } else {
       return Object.keys(obj).map(key => (
-        <tr>
-          <td>{key}</td> <td>{this.convertObj(obj[key])}</td>{" "}
-        </tr>
+        <table key={key}>
+          <tbody>
+            <tr>
+              <td>{key}</td>
+              <td>{this.convertObj(obj[key])}</td>
+            </tr>
+          </tbody>
+        </table>
       ));
     }
   };
@@ -78,7 +81,8 @@ class App extends Component {
     } else {
       return Object.keys(obj).map(key => (
         <tr>
-          <td>{key}</td> <td>{this.makePlan(obj[key], props.concat([key]))}</td>{" "}
+          <td>{key}</td>
+          <td>{this.makePlan(obj[key], props.concat([key]))}</td>
         </tr>
       ));
     }
@@ -104,11 +108,9 @@ class App extends Component {
   modMavenTree = obj => {
     if (typeof obj !== "object") {
       return (
-        <tr>
-          <td>
-            <button onClick={() => this.searchMods(obj)}>{obj}</button>
-          </td>
-        </tr>
+        <button key={obj} onClick={() => this.searchMods(obj)}>
+          {obj}
+        </button>
       );
     } else if (obj.constructor === Array) {
       return obj.map(mod => this.modMavenTree(mod));
@@ -116,9 +118,14 @@ class App extends Component {
       const replace = key =>
         key === "or" ? "Either of" : key === "and" ? "All of" : key;
       return Object.keys(obj).map(key => (
-        <tr>
-          <td>{replace(key)}</td> <td>{this.modMavenTree(obj[key])}</td>{" "}
-        </tr>
+        <table key={key}>
+          <tbody>
+            <tr>
+              <td>{replace(key)}</td>
+              <td>{this.modMavenTree(obj[key])}</td>
+            </tr>
+          </tbody>
+        </table>
       ));
     }
   };
@@ -341,7 +348,9 @@ class App extends Component {
         <div>
           History:
           {this.state.history.map(result => (
-            <p onClick={() => this.searchMods(result)}>{result}</p>
+            <p key={result} onClick={() => this.searchMods(result)}>
+              {result}
+            </p>
           ))}
         </div>
       </div>
