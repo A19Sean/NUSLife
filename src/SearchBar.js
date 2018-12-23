@@ -133,7 +133,7 @@ export default class SearchBar extends Component {
         </button>
         <br />
         {this.state.selectedMod !== undefined ? (
-          <button id="build-tree" onClick={this.props.buidPreReqTree}>
+          <button id="build-tree" onClick={() => this.props.buildPreReqTree(this.state.year)}>
             Build Tree
           </button>
         ) : (

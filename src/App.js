@@ -8,7 +8,7 @@ const axios = require("axios");
 // Check for prereqs, preclusion, mcs(overloading), basic requirements, mod mapping
 // Other programmes besides mods eg SEP, UTCP
 // Sort schedule chronologically
-// Some bugs in the ParsedPrerequisite Tree: Should be or but instead it's and eg: MA1521, MA1102R
+// Some bugs in the ParsedPrerequisite Tree: Should be "or" but instead it's "and" eg: MA1521, MA1102R
 // Overload indicator
 // Keyboard shortcuts
 // Test for dead links
@@ -115,8 +115,28 @@ class App extends Component {
     } else if (obj.constructor === Array) {
       return obj.map(mod => this.modMavenTree(mod));
     } else {
+      const isMod = key =>
+        [
+          "Prerequisite Tree",
+          "Either of",
+          "All of",
+          "Preclusions",
+          "Prerequisites",
+          "Needed by",
+          "Only"
+        ].indexOf(key) === -1;
       const replace = key =>
-        key === "or" ? "Either of" : key === "and" ? "All of" : key;
+        key === "or" ? (
+          "Any of"
+        ) : key === "and" ? (
+          "All of"
+        ) : isMod(key) ? (
+          <button key={key} onClick={() => this.searchMods(key)}>
+            {key}
+          </button>
+        ) : (
+          key
+        );
       return Object.keys(obj).map(key => (
         <table key={key}>
           <tbody>
@@ -130,12 +150,9 @@ class App extends Component {
     }
   };
 
-  // IN-PROGRESS
   // Builds entire prereq tree and updates state
-  buildPreReqTree = () => {
+  buildPreReqTree = year => {
     const mod = this.state.result.ModuleCode;
-    const year = this.state.year;
-
     const getPrereqs = mod => {
       if (mod === undefined) {
         return undefined;
@@ -145,40 +162,71 @@ class App extends Component {
 
       return axios
         .get(url)
-        .then(response => response.ParsedPrerequisite)
+        .then(response => response.data.ParsedPrerequisite)
         .catch(error => {
+          console.log(error);
           return undefined;
         });
     };
 
-    const buildTree = mod => {
-      return getPrereqs(mod).then(prTree => {
-        console.log(prTree);
-        if (prTree !== undefined) {
-          // iterates on bool operator keys "or" and "and"
-          return Promise.all(
-            Object.keys(prTree).map(boolOp => {
-              return Promise.all(prTree[boolOp].map(this.buildTree)).then(
-                prArray => {
-                  prTree[boolOp] = prArray;
-                }
-              );
+    const buildTree = mmTree => {
+      if (typeof mmTree === "object") {
+        // If mmTree is a boolTree
+        return Promise.all(
+          Object.keys(mmTree).map(boolOp =>
+            Promise.all(mmTree[boolOp].map(buildTree)).then(treeArray => {
+              // treeArray is an array of promises containing mmTrees
+              mmTree[boolOp] = treeArray;
             })
           )
-            .then(result => {
-              prTree["mod"] = mod;
-              console.log(prTree);
-            })
-            .resolve(prTree);
-        } else {
-          return mod;
-        }
-      });
+        ).then(result => {
+          return mmTree;
+        });
+      } else {
+        // If mmTree is a single mod
+        // Returns an object of format {<mod>: <boolTree>}
+        return getPrereqs(mmTree).then(boolTree => {
+          // Iterates on bool operator keys "or" and "and"
+          if (boolTree !== undefined) {
+            if (typeof boolTree === "object") {
+              return Promise.all(
+                Object.keys(boolTree).map(boolOp =>
+                  // boolTree[boolOp] is an array of prerequisite mods
+                  Promise.all(boolTree[boolOp].map(buildTree)).then(
+                    treeArray => {
+                      // treeArray is an array of promises containing mmTrees
+                      boolTree[boolOp] = treeArray;
+                    }
+                  )
+                )
+              ).then(result => {
+                // result is irrelevant - an array of undefineds
+                const temp = {};
+                temp[mmTree] = boolTree;
+                return temp;
+              });
+            } else {
+              // If there is only one prerequisite
+              return buildTree(boolTree).then(result => {
+                const temp = {};
+                temp[mmTree] = { Only: result };
+                return temp;
+              });
+            }
+          } else {
+            // If mod has no prerequisites (Either mod does not exist or it is a foundational mod)
+            return mmTree;
+          }
+        });
+      }
     };
 
     buildTree(mod).then(result => {
+      const temp = { "Prerequisite Tree": result };
+      console.log("Prerequisite Tree");
+      console.log(temp);
       this.setState({
-        preReqTree: result
+        preReqTree: temp
       });
     });
   };
@@ -188,7 +236,7 @@ class App extends Component {
     if (typeof obj !== "object") {
       return currmods.indexOf(obj) >= 0;
     } else {
-      console.log(obj);
+      // console.log(obj);
       const or =
         obj.or == null
           ? true
@@ -203,7 +251,7 @@ class App extends Component {
               (acc, elem) => acc && this.parseBoolTree(elem, currmods),
               true
             );
-      console.log(or, and);
+      // console.log(or, and);
       return or && and;
     }
   };
@@ -219,7 +267,7 @@ class App extends Component {
   };
 
   checkPrereqs = currmods => {
-    console.log(this.state.result);
+    // console.log(this.state.result);
     if (
       this.state.result === undefined ||
       this.state.result.ParsedPrerequisite === undefined
@@ -236,23 +284,23 @@ class App extends Component {
   addMod = (mod, sem, year) => {
     const currmods = this.getCurrMods();
     const temp = JSON.parse(JSON.stringify(this.state.yourmods));
-    console.log("test0");
+    // console.log("test0");
     // Checks for terminating conditions
     if (this.checkDuplicates(mod, currmods)) {
       this.setState({ error: "No duplicates" });
-      console.log("test1");
+      // console.log("test1");
       return undefined;
     } else if (this.checkPreclusion(currmods)) {
       this.setState({ error: "Already precluded" });
-      console.log("test2");
+      // console.log("test2");
       return undefined;
     } else if (!this.checkPrereqs(currmods)) {
       this.setState({ error: "Lack prerequisites" });
-      console.log("test3");
+      // console.log("test3");
       return undefined;
     }
 
-    console.log("test");
+    // console.log("test");
     if (this.state.result !== undefined) {
       if (temp[year] === undefined) {
         temp[year] = { "Sem 1": [], "Sem 2": [] };
@@ -267,7 +315,7 @@ class App extends Component {
       this.state.result === undefined
         ? 0
         : parseInt(this.state.result.ModuleCredit);
-    console.log(temp, newMcs);
+    // console.log(temp, newMcs);
     this.setState(state => ({
       yourmods: temp,
       mcs: state.mcs + newMcs,
@@ -297,9 +345,9 @@ class App extends Component {
   };
 
   // PLEASE DELETE
-  componentDidUpdate = () => {
-    console.log(this.state);
-  };
+  // componentDidUpdate = () => {
+  // console.log(this.state);
+  // };
 
   render() {
     const unwantedProps = [
