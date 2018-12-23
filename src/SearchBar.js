@@ -88,13 +88,17 @@ export default class SearchBar extends Component {
       });
   };
 
-  range = n => {
-    const temp = [];
-    for (var i = 0; i < n; i++) {
-      temp[i] = i;
-    }
-    return temp;
+  generateYears = n => {
+    return Array.from(new Array(n), (val, i) => 2000 + i);
   };
+
+  renderYears = () => (
+    <React.Fragment>
+      {this.generateYears(20).map(year => (
+        <option key={year}>{year + "-" + (year + 1)}</option>
+      ))}
+    </React.Fragment>
+  );
 
   componentDidMount = () => {
     axios
@@ -107,10 +111,7 @@ export default class SearchBar extends Component {
   };
 
   componentDidUpdate = prevProps => {
-    if (
-      // prevProps.year !== this.props.year &&
-      prevProps.mod !== this.props.mod
-    ) {
+    if (prevProps.mod !== this.props.mod) {
       this.searchMods(this.state.year, this.props.mod);
     }
   };
@@ -146,16 +147,15 @@ export default class SearchBar extends Component {
         </select>
         Year:
         <select id="select-year" onClick={this.selectYear}>
-          {this.range(20).map(i => (
-            <option value={i + 2000 + "-" + (i + 2001)}>
-              {i + 2000 + "-" + (i + 2001)}
-            </option>
-          ))}
+          {this.renderYears()}
         </select>
         <br />
         <span style={{ color: "red" }}>{this.state.error}</span>
         {this.state.autocomplete.map(module => (
-          <p onClick={() => this.searchMods(this.state.year, module)}>
+          <p
+            key={module}
+            onClick={() => this.searchMods(this.state.year, module)}
+          >
             {module}
           </p>
         ))}
@@ -170,5 +170,5 @@ SearchBar.propTypes = {
   updateResult: PropTypes.func.isRequired,
   updateHistory: PropTypes.func.isRequired,
   year: PropTypes.string,
-  mod: PropTypes.object
+  mod: PropTypes.string
 };
