@@ -4,15 +4,19 @@ import "./SearchBar.js";
 import SearchBar from "./SearchBar.js";
 const axios = require("axios");
 
+// DONE
+// Fixed error messages not showing up for addMod() because "error" field is located in the Search component; added updateError() and relocated error field to App
+// Changed "Add Mod" button to not trigger handleSubmit()
+
 // TODO
-// Check for prereqs, preclusion, mcs(overloading), basic requirements, mod mapping
+// Bug: this.state.history is not limited to the latest 10 searches as long as it has a "key" property - remove key={result} and there is no issue
+// Check for mcs(overloading), basic requirements, mod mapping
 // Other programmes besides mods eg SEP, UTCP
 // Sort schedule chronologically
 // Some bugs in the ParsedPrerequisite Tree: Should be "or" but instead it's "and" eg: MA1521, MA1102R
 // Overload indicator
 // Keyboard shortcuts
 // Test for dead links
-// Build entire prereq tree from top down
 // Tags and sharing
 
 class App extends Component {
@@ -24,7 +28,8 @@ class App extends Component {
       preReqTree: {}, // contains preReqTree obj
       history: [], // contains history of searched modules
       yourmods: {}, // contains scheduled modules
-      mcs: 0
+      mcs: 0,
+      error: ""
     };
   }
 
@@ -344,6 +349,10 @@ class App extends Component {
     }));
   };
 
+  updateError = error => {
+    this.setState({ error: error });
+  };
+
   // PLEASE DELETE
   // componentDidUpdate = () => {
   // console.log(this.state);
@@ -384,8 +393,10 @@ class App extends Component {
             buildPreReqTree={this.buildPreReqTree}
             updateResult={this.updateResult}
             updateHistory={this.updateHistory}
+            updateError={this.updateError}
             year={this.state.year}
             mod={this.state.mod}
+            error={this.state.error}
           />
           {this.convertObj(
             this.filterObjProps(unwantedProps, this.state.result)

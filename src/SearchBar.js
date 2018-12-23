@@ -11,8 +11,7 @@ export default class SearchBar extends Component {
       year: "2018-2019",
       modules: [], // stores all modules
       autocomplete: [],
-      selectedMod: "", // stored as module code
-      error: ""
+      selectedMod: "" // stored as module code
     };
   }
 
@@ -26,25 +25,23 @@ export default class SearchBar extends Component {
           value: mod,
           year: year,
           autocomplete: [],
-          selectedMod: response.data.ModuleCode,
-          error: "" // make any existing error message disappear
+          selectedMod: response.data.ModuleCode  
         }));
+        this.props.updateError(""); // make any existing error message disappear
         this.props.updateResult(response.data);
         this.props.updateHistory(mod);
       })
       .catch(error => {
         // handle error
         console.log(error);
-        this.setState({
-          error: "Could not find module"
-        });
+        this.props.updateError("Could not find module");
         this.props.updateResult(undefined);
       });
   };
 
   handleSubmit = event => {
     event.preventDefault();
-    // who does the search?
+    // who does the search? search button
     this.searchMods(this.state.year, this.state.value);
   };
 
@@ -63,7 +60,7 @@ export default class SearchBar extends Component {
 
   handleClick = () => {
     if (this.state.selectedMod == null) {
-      this.setState({ error: "No mod selected" });
+      this.props.updateError("No mod selected");
       return undefined;
     }
     const year = this.state.year;
@@ -128,7 +125,7 @@ export default class SearchBar extends Component {
           placeholder={"Search modules"}
         />
         <input type="submit" value="Search" />
-        <button id="add-mod" onClick={this.handleClick}>
+        <button type="button" id="add-mod" onClick={this.handleClick}>
           Add Module
         </button>
         <br />
@@ -150,7 +147,7 @@ export default class SearchBar extends Component {
           {this.renderYears()}
         </select>
         <br />
-        <span style={{ color: "red" }}>{this.state.error}</span>
+        <span style={{ color: "red" }}>{this.props.error}</span>
         {this.state.autocomplete.map(module => (
           <p
             key={module}
@@ -169,6 +166,8 @@ SearchBar.propTypes = {
   buildPreReqTree: PropTypes.func.isRequired,
   updateResult: PropTypes.func.isRequired,
   updateHistory: PropTypes.func.isRequired,
+  updateError: PropTypes.func.isRequired,
   year: PropTypes.string,
-  mod: PropTypes.string
+  mod: PropTypes.string,
+  error: PropTypes.string
 };
