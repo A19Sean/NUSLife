@@ -25,7 +25,7 @@ export default class SearchBar extends Component {
           value: mod,
           year: year,
           autocomplete: [],
-          selectedMod: response.data.ModuleCode  
+          selectedMod: response.data.ModuleCode
         }));
         this.props.updateError(""); // make any existing error message disappear
         this.props.updateResult(response.data);
@@ -125,12 +125,15 @@ export default class SearchBar extends Component {
           placeholder={"Search modules"}
         />
         <input type="submit" value="Search" />
+        <br />
         <button type="button" id="add-mod" onClick={this.handleClick}>
           Add Module
         </button>
-        <br />
         {this.state.selectedMod !== undefined ? (
-          <button id="build-tree" onClick={() => this.props.buildPreReqTree(this.state.year)}>
+          <button
+            id="build-tree"
+            onClick={() => this.props.buildPreReqTree(this.state.year)}
+          >
             Build Tree
           </button>
         ) : (
