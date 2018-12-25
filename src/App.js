@@ -5,7 +5,6 @@ import SearchBar from "./SearchBar.js";
 const axios = require("axios");
 
 // TODO
-// Bug: this.state.history is not limited to the latest 10 searches as long as it has a "key" property - remove key={result} and there is no issue
 // Check for mcs(overloading), basic requirements, mod mapping
 // Other programmes besides mods eg SEP, UTCP
 // Sort schedule chronologically
@@ -67,24 +66,23 @@ class App extends Component {
   makePlan = (obj, props) => {
     if (obj.constructor === Array) {
       return obj.map(elem => (
-        <tr>
-          <td>
-            <button
-              onClick={() =>
-                this.delMod(elem.name, elem.mcs, props[1], props[0])
-              }
-            >
-              {elem.name}
-            </button>
-          </td>
-        </tr>
+        <button
+          key={elem.name}
+          onClick={() => this.delMod(elem.name, elem.mcs, props[1], props[0])}
+        >
+          {elem.name}
+        </button>
       ));
     } else {
       return Object.keys(obj).map(key => (
-        <tr>
-          <td>{key}</td>
-          <td>{this.makePlan(obj[key], props.concat([key]))}</td>
-        </tr>
+        <table key={key}>
+          <tbody>
+            <tr>
+              <td>{key}</td>
+              <td>{this.makePlan(obj[key], props.concat([key]))}</td>
+            </tr>
+          </tbody>
+        </table>
       ));
     }
   };
@@ -153,6 +151,7 @@ class App extends Component {
 
   // Builds entire prereq tree and updates state
   buildPreReqTree = year => {
+    if (this.state.result === undefined) return;
     const mod = this.state.result.ModuleCode;
     const getPrereqs = mod => {
       if (mod === undefined) {
@@ -267,23 +266,17 @@ class App extends Component {
   addMod = (mod, sem, year) => {
     const currmods = this.getCurrMods();
     const temp = JSON.parse(JSON.stringify(this.state.yourmods));
-    // console.log("test0");
-    // Checks for terminating conditions
     if (this.checkDuplicates(mod, currmods)) {
       this.setState({ error: "No duplicates" });
-      // console.log("test1");
       return undefined;
     } else if (this.checkPreclusion(currmods)) {
       this.setState({ error: "Already precluded" });
-      // console.log("test2");
       return undefined;
     } else if (!this.checkPrereqs(currmods)) {
       this.setState({ error: "Lack prerequisites" });
-      // console.log("test3");
       return undefined;
     }
 
-    // console.log("test");
     if (this.state.result !== undefined) {
       if (temp[year] === undefined) {
         temp[year] = { "Sem 1": [], "Sem 2": [] };
@@ -298,7 +291,6 @@ class App extends Component {
       this.state.result === undefined
         ? 0
         : parseInt(this.state.result.ModuleCredit);
-    // console.log(temp, newMcs);
     this.setState(state => ({
       yourmods: temp,
       mcs: state.mcs + newMcs,
@@ -323,18 +315,13 @@ class App extends Component {
 
   updateHistory = mod => {
     this.setState(state => ({
-      history: state.history.concat([mod]).slice(-10)
+      history: [mod].concat(state.history).slice(0, 10)
     }));
   };
 
   updateError = error => {
     this.setState({ error: error });
   };
-
-  // PLEASE DELETE
-  // componentDidUpdate = () => {
-  // console.log(this.state);
-  // };
 
   render() {
     const unwantedProps = [
@@ -384,8 +371,8 @@ class App extends Component {
         </div>
         <div>
           History:
-          {this.state.history.map(result => (
-            <p onClick={() => this.searchMods(result)}>
+          {this.state.history.map((result, index) => (
+            <p key={index} onClick={() => this.searchMods(result)}>
               {result}
             </p>
           ))}
