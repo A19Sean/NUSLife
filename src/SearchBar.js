@@ -35,7 +35,7 @@ export default class SearchBar extends Component {
         // handle error
         console.log(error);
         this.props.updateError("Could not find module");
-        this.props.updateResult(undefined);
+        // this.props.updateResult(undefined);
       });
   };
 

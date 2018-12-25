@@ -4,10 +4,6 @@ import "./SearchBar.js";
 import SearchBar from "./SearchBar.js";
 const axios = require("axios");
 
-// DONE
-// Fixed error messages not showing up for addMod() because "error" field is located in the Search component; added updateError() and relocated error field to App
-// Changed "Add Mod" button to not trigger handleSubmit()
-
 // TODO
 // Bug: this.state.history is not limited to the latest 10 searches as long as it has a "key" property - remove key={result} and there is no issue
 // Check for mcs(overloading), basic requirements, mod mapping
@@ -174,53 +170,35 @@ class App extends Component {
         });
     };
 
-    const buildTree = mmTree => {
-      if (typeof mmTree === "object") {
-        // If mmTree is a boolTree
+    const buildTree = node => {
+      if (typeof node === "object") {
+        // If node is a boolTree
         return Promise.all(
-          Object.keys(mmTree).map(boolOp =>
-            Promise.all(mmTree[boolOp].map(buildTree)).then(treeArray => {
-              // treeArray is an array of promises containing mmTrees
-              mmTree[boolOp] = treeArray;
+          Object.keys(node).map(boolOp =>
+            buildTree(node[boolOp]).then(treeArray => {
+              // An array of preReqTrees
+              node[boolOp] = treeArray;
             })
           )
-        ).then(result => {
-          return mmTree;
-        });
+        ).then(result => node);
+      } else if (node.constructor === Array) {
+        // If node is an array of mods
+        return Promise.all(node.map(buildTree));
       } else {
-        // If mmTree is a single mod
-        // Returns an object of format {<mod>: <boolTree>}
-        return getPrereqs(mmTree).then(boolTree => {
-          // Iterates on bool operator keys "or" and "and"
-          if (boolTree !== undefined) {
+        // If node is a single mod
+        return getPrereqs(node).then(boolTree => {
+          if (boolTree === undefined) {
+            // If mod has no prerequisites (Either mod does not exist or it is a foundational mod)
+            return node;
+          } else {
             if (typeof boolTree === "object") {
-              return Promise.all(
-                Object.keys(boolTree).map(boolOp =>
-                  // boolTree[boolOp] is an array of prerequisite mods
-                  Promise.all(boolTree[boolOp].map(buildTree)).then(
-                    treeArray => {
-                      // treeArray is an array of promises containing mmTrees
-                      boolTree[boolOp] = treeArray;
-                    }
-                  )
-                )
-              ).then(result => {
-                // result is irrelevant - an array of undefineds
-                const temp = {};
-                temp[mmTree] = boolTree;
-                return temp;
-              });
+              return buildTree(boolTree).then(result => ({ [node]: result }));
             } else {
               // If there is only one prerequisite
-              return buildTree(boolTree).then(result => {
-                const temp = {};
-                temp[mmTree] = { Only: result };
-                return temp;
-              });
+              return buildTree(boolTree).then(result => ({
+                [node]: { Only: result }
+              }));
             }
-          } else {
-            // If mod has no prerequisites (Either mod does not exist or it is a foundational mod)
-            return mmTree;
           }
         });
       }
@@ -407,7 +385,7 @@ class App extends Component {
         <div>
           History:
           {this.state.history.map(result => (
-            <p key={result} onClick={() => this.searchMods(result)}>
+            <p onClick={() => this.searchMods(result)}>
               {result}
             </p>
           ))}
