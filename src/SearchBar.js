@@ -125,20 +125,9 @@ export default class SearchBar extends Component {
           placeholder={"Search modules"}
         />
         <input type="submit" value="Search" />
-        <br />
         <button type="button" id="add-mod" onClick={this.handleClick}>
           Add Module
         </button>
-        {this.state.selectedMod !== undefined ? (
-          <button
-            id="build-tree"
-            onClick={() => this.props.buildPreReqTree(this.state.year)}
-          >
-            Build Tree
-          </button>
-        ) : (
-          ""
-        )}
         <br />
         Semester:
         <select id="select-sem" onClick={this.selectSem}>
@@ -166,7 +155,6 @@ export default class SearchBar extends Component {
 
 SearchBar.propTypes = {
   addMod: PropTypes.func.isRequired,
-  buildPreReqTree: PropTypes.func.isRequired,
   updateResult: PropTypes.func.isRequired,
   updateHistory: PropTypes.func.isRequired,
   updateError: PropTypes.func.isRequired,
