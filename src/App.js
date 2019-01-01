@@ -40,6 +40,45 @@ class App extends Component {
     }
   };
 
+  makeButton = (key, click, text) => (
+    <button key={key} onClick={click}>
+      {text}
+    </button>
+  );
+
+  formatYear = year => {
+    return year.replace("/", "-");
+  };
+
+  buildTreeButton = key => {
+    if (key === "Prerequisites")
+      return (
+        <React.Fragment>
+          <br />
+          {this.makeButton(
+            key,
+            () =>
+              this.buildPreReqTree(this.formatYear(this.state.result.AcadYear)),
+            "Prerequisite Tree"
+          )}
+        </React.Fragment>
+      );
+  };
+
+  makeTable = (key, fn) => (
+    <table key={key}>
+      <tbody>
+        <tr>
+          <td>
+            {key}
+            {this.buildTreeButton(key)}
+          </td>
+          <td>{fn}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+
   // Converts object to html
   convertObj = obj => {
     if (typeof obj !== "object") {
@@ -49,41 +88,26 @@ class App extends Component {
         return this.convertObj(elem);
       });
     } else {
-      return Object.keys(obj).map(key => (
-        <table key={key}>
-          <tbody>
-            <tr>
-              <td>{key}</td>
-              <td>{this.convertObj(obj[key])}</td>
-            </tr>
-          </tbody>
-        </table>
-      ));
+      return Object.keys(obj).map(key =>
+        this.makeTable(key, this.convertObj(obj[key]))
+      );
     }
   };
 
   // Converts a plan object into html
   makePlan = (obj, props) => {
     if (obj.constructor === Array) {
-      return obj.map(elem => (
-        <button
-          key={elem.name}
-          onClick={() => this.delMod(elem.name, elem.mcs, props[1], props[0])}
-        >
-          {elem.name}
-        </button>
-      ));
+      return obj.map(elem =>
+        this.makeButton(
+          elem.name,
+          () => this.delMod(elem.name, elem.mcs, props[1], props[0]),
+          elem.name
+        )
+      );
     } else {
-      return Object.keys(obj).map(key => (
-        <table key={key}>
-          <tbody>
-            <tr>
-              <td>{key}</td>
-              <td>{this.makePlan(obj[key], props.concat([key]))}</td>
-            </tr>
-          </tbody>
-        </table>
-      ));
+      return Object.keys(obj).map(key =>
+        this.makeTable(key, this.makePlan(obj[key], props.concat([key])))
+      );
     }
   };
 
@@ -105,48 +129,35 @@ class App extends Component {
 
   // Parses boolTree objs to return a html tree
   modMavenTree = obj => {
-    if (typeof obj !== "object") {
-      return (
-        <button key={obj} onClick={() => this.searchMods(obj)}>
-          {obj}
-        </button>
-      );
-    } else if (obj.constructor === Array) {
-      return obj.map(mod => this.modMavenTree(mod));
-    } else {
-      const isMod = key =>
-        [
-          "Prerequisite Tree",
-          "Either of",
-          "All of",
-          "Preclusions",
-          "Prerequisites",
-          "Needed by",
-          "Only"
-        ].indexOf(key) === -1;
-      const replace = key =>
-        key === "or" ? (
-          "Any of"
-        ) : key === "and" ? (
-          "All of"
-        ) : isMod(key) ? (
-          <button key={key} onClick={() => this.searchMods(key)}>
-            {key}
-          </button>
-        ) : (
-          key
-        );
-      return Object.keys(obj).map(key => (
-        <table key={key}>
-          <tbody>
-            <tr>
-              <td>{replace(key)}</td>
-              <td>{this.modMavenTree(obj[key])}</td>
-            </tr>
-          </tbody>
-        </table>
-      ));
+    if (obj === undefined || obj === "") {
+      return;
     }
+    if (typeof obj !== "object") {
+      return this.makeButton(obj, () => this.searchMods(obj), obj);
+    }
+    if (obj.constructor === Array) {
+      return obj.map(mod => this.modMavenTree(mod));
+    }
+    const isMod = key =>
+      [
+        "Prerequisite Tree",
+        "Either of",
+        "All of",
+        "Preclusions",
+        "Prerequisites",
+        "Needed by",
+        "Only"
+      ].indexOf(key) === -1;
+    const replace = key => {
+      if (key === "or") return "Any of";
+      if (key === "and") return "All of";
+      if (isMod(key))
+        return this.makeButton(key, () => this.searchMods(key), key);
+      return key;
+    };
+    return Object.keys(obj).map(key =>
+      this.makeTable(replace(key), this.modMavenTree(obj[key]))
+    );
   };
 
   // Builds entire prereq tree and updates state
@@ -205,8 +216,6 @@ class App extends Component {
 
     buildTree(mod).then(result => {
       const temp = { "Prerequisite Tree": result };
-      console.log("Prerequisite Tree");
-      console.log(temp);
       this.setState({
         preReqTree: temp
       });
@@ -218,7 +227,6 @@ class App extends Component {
     if (typeof obj !== "object") {
       return currmods.indexOf(obj) >= 0;
     } else {
-      // console.log(obj);
       const or =
         obj.or == null
           ? true
@@ -233,7 +241,6 @@ class App extends Component {
               (acc, elem) => acc && this.parseBoolTree(elem, currmods),
               true
             );
-      // console.log(or, and);
       return or && and;
     }
   };
@@ -355,7 +362,6 @@ class App extends Component {
         <div>
           <SearchBar
             addMod={this.addMod}
-            buildPreReqTree={this.buildPreReqTree}
             updateResult={this.updateResult}
             updateHistory={this.updateHistory}
             updateError={this.updateError}
