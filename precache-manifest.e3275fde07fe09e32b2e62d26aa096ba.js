@@ -4,19 +4,19 @@ self.__precacheManifest = [
     "url": "/NUSLife/static/js/runtime~main.7b10db19.js"
   },
   {
-    "revision": "b9a3193c0ffc0f372f4c",
-    "url": "/NUSLife/static/js/main.b9a3193c.chunk.js"
+    "revision": "b0c2a3246427f3048869",
+    "url": "/NUSLife/static/js/main.b0c2a324.chunk.js"
   },
   {
     "revision": "09478223851f8734c54a",
     "url": "/NUSLife/static/js/1.09478223.chunk.js"
   },
   {
-    "revision": "b9a3193c0ffc0f372f4c",
-    "url": "/NUSLife/static/css/main.f3adfcc3.chunk.css"
+    "revision": "b0c2a3246427f3048869",
+    "url": "/NUSLife/static/css/main.549d23fb.chunk.css"
   },
   {
-    "revision": "ad18eefbbaff6e6a8e8808e29dd1cbd8",
+    "revision": "1516941ca9694d0a5734d3973d0f921f",
     "url": "/NUSLife/index.html"
   }
 ];
