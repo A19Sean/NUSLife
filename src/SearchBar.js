@@ -27,21 +27,18 @@ export default class SearchBar extends Component {
           autocomplete: [],
           selectedMod: response.data.ModuleCode
         }));
-        this.props.updateError(""); // make any existing error message disappear
+        this.props.updateError(""); // Clears error field
         this.props.updateResult(response.data);
         this.props.updateHistory(mod);
       })
       .catch(error => {
-        // handle error
         console.log(error);
         this.props.updateError("Could not find module");
-        // this.props.updateResult(undefined);
       });
   };
 
   handleSubmit = event => {
     event.preventDefault();
-    // who does the search? search button
     this.searchMods(this.state.year, this.state.value);
   };
 
@@ -86,14 +83,26 @@ export default class SearchBar extends Component {
   };
 
   generateYears = n => {
-    return Array.from(new Array(n), (val, i) => 2000 + i);
+    // Gets current year - 4
+    const year = parseInt(new Date().toISOString().slice(0, 4)) - 4;
+    return Array.from(new Array(n), (val, i) => year + i);
   };
 
   renderYears = () => (
     <React.Fragment>
-      {this.generateYears(20).map(year => (
+      {this.generateYears(10).map(year => (
         <option key={year}>{year + "-" + (year + 1)}</option>
       ))}
+    </React.Fragment>
+  );
+
+  renderOverloadCheckbox = () => (
+    <React.Fragment>
+      {this.props.overload ? (
+        <input type="checkbox" onChange={this.props.updateOverload} checked />
+      ) : (
+        <input type="checkbox" onChange={this.props.updateOverload} />
+      )}
     </React.Fragment>
   );
 
@@ -139,6 +148,8 @@ export default class SearchBar extends Component {
           {this.renderYears()}
         </select>
         <br />
+        Overload: {this.renderOverloadCheckbox()}
+        <br />
         <span style={{ color: "red" }}>{this.props.error}</span>
         {this.state.autocomplete.map(module => (
           <p
@@ -158,7 +169,9 @@ SearchBar.propTypes = {
   updateResult: PropTypes.func.isRequired,
   updateHistory: PropTypes.func.isRequired,
   updateError: PropTypes.func.isRequired,
+  updateOverload: PropTypes.func.isRequired,
   year: PropTypes.string,
   mod: PropTypes.string,
+  overload: PropTypes.bool,
   error: PropTypes.string
 };

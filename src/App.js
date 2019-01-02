@@ -4,14 +4,18 @@ import "./SearchBar.js";
 import SearchBar from "./SearchBar.js";
 const axios = require("axios");
 
+// DONE
+// Added condition that prereqs have to be chronological in addMod()
+// Display years chronologically in makePlan()
+// Added overflow functionality in addMod(), added checkbox in SearchBar component
+// Autoupdating of years in generateYears()
+
 // TODO
-// Check for mcs(overloading), basic requirements, mod mapping
+// Check for basic requirements, mod mapping
 // Other programmes besides mods eg SEP, UTCP
-// Sort schedule chronologically
 // Some bugs in the ParsedPrerequisite Tree: Should be "or" but instead it's "and" eg: MA1521, MA1102R
-// Overload indicator
+// Bug: Mods that are not explicitly stated as prereqs but are preclusions do not function as prereqs
 // Keyboard shortcuts
-// Test for dead links
 // Tags and sharing
 
 class App extends Component {
@@ -24,6 +28,7 @@ class App extends Component {
       history: [], // contains history of searched modules
       yourmods: {}, // contains scheduled modules
       mcs: 0,
+      overload: false,
       error: ""
     };
   }
@@ -105,20 +110,13 @@ class App extends Component {
         )
       );
     } else {
-      return Object.keys(obj).map(key =>
-        this.makeTable(key, this.makePlan(obj[key], props.concat([key])))
-      );
+      // Sorts years(keys) in chronological/lexical order before rendering
+      return Object.keys(obj)
+        .sort((a, b) => a <= b)
+        .map(key =>
+          this.makeTable(key, this.makePlan(obj[key], props.concat([key])))
+        );
     }
-  };
-
-  getCurrMods = () => {
-    var currmods = [];
-    for (var year in this.state.yourmods) {
-      const first = this.state.yourmods[year]["Sem 1"].map(mod => mod.name);
-      const second = this.state.yourmods[year]["Sem 2"].map(mod => mod.name);
-      currmods = currmods.concat(first.concat(second));
-    }
-    return currmods;
   };
 
   searchMods = mod => {
@@ -222,66 +220,111 @@ class App extends Component {
     });
   };
 
-  // Parses boolTree objs to return a bool value(prerequisites, preclusions)
-  parseBoolTree = (obj, currmods) => {
-    if (typeof obj !== "object") {
-      return currmods.indexOf(obj) >= 0;
-    } else {
-      const or =
-        obj.or == null
-          ? true
-          : obj.or.reduce(
-              (acc, elem) => acc || this.parseBoolTree(elem, currmods),
-              false
-            );
-      const and =
-        obj.and == null
-          ? true
-          : obj.and.reduce(
-              (acc, elem) => acc && this.parseBoolTree(elem, currmods),
-              true
-            );
-      return or && and;
-    }
-  };
-
-  checkPreclusion = currmods => {
-    if (
-      this.state.result === undefined ||
-      this.state.result.ParsedPreclusion === undefined
-    )
-      return false;
-    else
-      return this.parseBoolTree(this.state.result.ParsedPreclusion, currmods);
-  };
-
-  checkPrereqs = currmods => {
-    // console.log(this.state.result);
-    if (
-      this.state.result === undefined ||
-      this.state.result.ParsedPrerequisite === undefined
-    )
-      return true;
-    else
-      return this.parseBoolTree(this.state.result.ParsedPrerequisite, currmods);
-  };
-
-  checkDuplicates = (mod, currmods) => {
-    return currmods.filter(currmod => currmod === mod).length > 0;
-  };
-
   addMod = (mod, sem, year) => {
-    const currmods = this.getCurrMods();
+    const getCurrMods = (sem = "Sem 2", maxYear = "9999-9999") => {
+      const getModsInYear = year => {
+        if (year < maxYear || (year === maxYear && sem === "Sem 2")) {
+          const first = this.state.yourmods[year]["Sem 1"].map(mod => mod.name);
+          const second = this.state.yourmods[year]["Sem 2"].map(
+            mod => mod.name
+          );
+          return first.concat(second);
+        } else if (year === maxYear && sem === "Sem 1") {
+          return this.state.yourmods[year]["Sem 1"].map(mod => mod.name);
+        } else {
+          return [];
+        }
+      };
+
+      const currmods = Object.keys(this.state.yourmods)
+        .map(getModsInYear)
+        .reduce((acc, arr) => acc.concat(arr), []);
+
+      return currmods;
+    };
+
+    // Parses boolTree objs to return a bool value(prerequisites, preclusions)
+    const parseBoolTree = (obj, currmods) => {
+      if (typeof obj !== "object") {
+        return currmods.indexOf(obj) >= 0;
+      } else {
+        const or =
+          obj.or == null
+            ? true
+            : obj.or.reduce(
+                (acc, elem) => acc || parseBoolTree(elem, currmods),
+                false
+              );
+        const and =
+          obj.and == null
+            ? true
+            : obj.and.reduce(
+                (acc, elem) => acc && parseBoolTree(elem, currmods),
+                true
+              );
+        return or && and;
+      }
+    };
+
+    const checkPreclusion = currmods => {
+      if (
+        this.state.result === undefined ||
+        this.state.result.ParsedPreclusion === undefined
+      )
+        return false;
+      else return parseBoolTree(this.state.result.ParsedPreclusion, currmods);
+    };
+
+    const checkPrereqs = currmods => {
+      if (
+        this.state.result === undefined ||
+        this.state.result.ParsedPrerequisite === undefined
+      )
+        return true;
+      else return parseBoolTree(this.state.result.ParsedPrerequisite, currmods);
+    };
+
+    const checkDuplicates = currmods => {
+      return currmods.find(currmod => currmod === mod) !== undefined;
+    };
+
+    const checkOverload = () => {
+      if (this.state.yourmods[year] === undefined) {
+        return 0;
+      } else {
+        const mild = 24;
+        const overload = 32;
+        const total = this.state.yourmods[year][sem]
+          .map(mod => parseInt(mod.mcs))
+          .reduce((acc, mcs) => acc + mcs, 0);
+        return total >= overload ? 2 : total >= mild ? 1 : 0;
+      }
+    };
+
     const temp = JSON.parse(JSON.stringify(this.state.yourmods));
-    if (this.checkDuplicates(mod, currmods)) {
-      this.setState({ error: "No duplicates" });
+    if (checkDuplicates(getCurrMods())) {
+      this.updateError("No duplicates");
       return undefined;
-    } else if (this.checkPreclusion(currmods)) {
-      this.setState({ error: "Already precluded" });
+    } else if (checkPreclusion(getCurrMods())) {
+      this.updateError("Already precluded");
       return undefined;
-    } else if (!this.checkPrereqs(currmods)) {
-      this.setState({ error: "Lack prerequisites" });
+    } else if (!checkPrereqs(getCurrMods(sem, year))) {
+      this.updateError("Lack prerequisites");
       return undefined;
+    } else if (checkOverload() > 0) {
+      const value = checkOverload();
+      // Overflows mod
+      if (value === 2 && !this.state.overload) {
+        this.updateError(
+          "You are unable to overload without applying for permission"
+        );
+        // Increments year, sem
+        const yearInt = parseInt(year.slice(0, 4));
+        year = sem === "Sem 1" ? year : yearInt + 1 + "-" + (yearInt + 2);
+        sem = sem === "Sem 1" ? "Sem 2" : "Sem 1";
+      } else if (value === 1) {
+        this.updateError("Taking on a challenge are we?");
+      }
     }
 
     if (this.state.result !== undefined) {
@@ -293,15 +336,16 @@ class App extends Component {
       ]);
     }
 
-    // Updates yourmods, mcs, and clears error
+    // Updates yourmods, mcs
+    // Clears error?s
     const newMcs =
       this.state.result === undefined
         ? 0
         : parseInt(this.state.result.ModuleCredit);
     this.setState(state => ({
       yourmods: temp,
-      mcs: state.mcs + newMcs,
-      error: ""
+      mcs: state.mcs + newMcs
+      // error: ""
     }));
   };
 
@@ -326,8 +370,18 @@ class App extends Component {
     }));
   };
 
+  updateOverload = () => {
+    this.setState(state => ({
+      overload: !state.overload
+    }));
+  };
+
   updateError = error => {
     this.setState({ error: error });
+  };
+
+  handleKeyInput = event => {
+    console.log(event.key);
   };
 
   render() {
@@ -352,7 +406,7 @@ class App extends Component {
           }
         : "";
     return (
-      <div className="App">
+      <div className="App" onKeyDown={this.handleKeyInput}>
         <div>
           Your Mods:
           {this.makePlan(this.state.yourmods, [])} <br />
@@ -365,8 +419,10 @@ class App extends Component {
             updateResult={this.updateResult}
             updateHistory={this.updateHistory}
             updateError={this.updateError}
+            updateOverload={this.updateOverload}
             year={this.state.year}
             mod={this.state.mod}
+            overload={this.state.overload}
             error={this.state.error}
           />
           {this.convertObj(
