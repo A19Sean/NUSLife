@@ -96,16 +96,6 @@ export default class SearchBar extends Component {
     </React.Fragment>
   );
 
-  renderOverloadCheckbox = () => (
-    <React.Fragment>
-      {this.props.overload ? (
-        <input type="checkbox" onChange={this.props.updateOverload} checked />
-      ) : (
-        <input type="checkbox" onChange={this.props.updateOverload} />
-      )}
-    </React.Fragment>
-  );
-
   componentDidMount = () => {
     axios
       .get(`https://api.nusmods.com/${this.state.year}/moduleList.json`)
@@ -148,7 +138,6 @@ export default class SearchBar extends Component {
           {this.renderYears()}
         </select>
         <br />
-        Overload: {this.renderOverloadCheckbox()}
         <br />
         <span style={{ color: "red" }}>{this.props.error}</span>
         {this.state.autocomplete.map(module => (
@@ -169,9 +158,7 @@ SearchBar.propTypes = {
   updateResult: PropTypes.func.isRequired,
   updateHistory: PropTypes.func.isRequired,
   updateError: PropTypes.func.isRequired,
-  updateOverload: PropTypes.func.isRequired,
   year: PropTypes.string,
   mod: PropTypes.string,
-  overload: PropTypes.bool,
   error: PropTypes.string
 };
