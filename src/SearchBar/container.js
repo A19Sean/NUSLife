@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
-const axios = require("axios");
+import axios from "axios";
+
+import SearchBarComponent from "./component";
 
 export default class SearchBar extends Component {
   constructor() {
@@ -82,20 +84,6 @@ export default class SearchBar extends Component {
       });
   };
 
-  generateYears = n => {
-    // Gets current year - 4
-    const year = parseInt(new Date().toISOString().slice(0, 4)) - 4;
-    return Array.from(new Array(n), (val, i) => year + i);
-  };
-
-  renderYears = () => (
-    <React.Fragment>
-      {this.generateYears(10).map(year => (
-        <option key={year}>{year + "-" + (year + 1)}</option>
-      ))}
-    </React.Fragment>
-  );
-
   componentDidMount = () => {
     axios
       .get(`https://api.nusmods.com/${this.state.year}/moduleList.json`)
@@ -114,51 +102,28 @@ export default class SearchBar extends Component {
 
   render() {
     return (
-      <form onSubmit={this.handleSubmit}>
-        Module Code:
-        <input
-          type="text"
-          name="name"
-          value={this.state.value}
-          onChange={this.handleChange}
-          placeholder={"Search modules"}
-        />
-        <input type="submit" value="Search" />
-        <button type="button" id="add-mod" onClick={this.handleClick}>
-          Add Module
-        </button>
-        <br />
-        Semester:
-        <select id="select-sem" onClick={this.selectSem}>
-          <option value="1">1</option>
-          <option value="2">2</option>
-        </select>
-        Year:
-        <select id="select-year" onClick={this.selectYear}>
-          {this.renderYears()}
-        </select>
-        <br />
-        <br />
-        <span style={{ color: "red" }}>{this.props.error}</span>
-        {this.state.autocomplete.map(module => (
-          <p
-            key={module}
-            onClick={() => this.searchMods(this.state.year, module)}
-          >
-            {module}
-          </p>
-        ))}
-      </form>
+      <SearchBarComponent
+        autocomplete={this.state.autocomplete}
+        error={this.props.error}
+        handleClick={this.handleClick}
+        handleChange={this.handleChange}
+        handleSubmit={this.handleSubmit}
+        searchMods={this.searchMods}
+        selectSem={this.selectSem}
+        selectYear={this.selectYear}
+        value={this.state.value}
+        year={this.state.year}
+      />
     );
   }
 }
 
 SearchBar.propTypes = {
   addMod: PropTypes.func.isRequired,
+  error: PropTypes.string,
+  mod: PropTypes.string,
   updateResult: PropTypes.func.isRequired,
   updateHistory: PropTypes.func.isRequired,
   updateError: PropTypes.func.isRequired,
-  year: PropTypes.string,
-  mod: PropTypes.string,
-  error: PropTypes.string
+  year: PropTypes.string
 };
