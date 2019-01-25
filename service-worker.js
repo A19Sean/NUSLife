@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/NUSLife/precache-manifest.b51c82676ce126fbee4bc38b902187d0.js"
+  "/NUSLife/precache-manifest.d2052e536e628ddb9f3e60fa3b90df73.js"
 );
 
 workbox.clientsClaim();
