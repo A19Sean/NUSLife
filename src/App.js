@@ -1,13 +1,14 @@
 import React, { Component } from "react";
+import axios from "axios";
+
+import SearchBar from "./SearchBar";
+import StudentPlan from "./StudentPlan";
+
 import "./App.css";
-import "./SearchBar.js";
-import SearchBar from "./SearchBar.js";
-const axios = require("axios");
 
 // DONE
 // tags and sharing, preclusions as prereqs
 // Add grade calculation
-// Code refactoring
 // Improve overload
 
 // TODO
@@ -26,11 +27,17 @@ class App extends Component {
       result: undefined, // state of search result
       preReqTree: {}, // contains preReqTree obj
       history: [], // contains history of searched modules
-      yourmods: {}, // contains scheduled modules
+      studentMods: {}, // contains scheduled modules
       mcs: 0,
       error: ""
     };
   }
+
+  setAppState = (key, value) => {
+    this.setState({
+      [key]: value
+    });
+  };
 
   copyObj = obj => JSON.parse(JSON.stringify(obj));
 
@@ -99,76 +106,6 @@ class App extends Component {
     }
   };
 
-  // Converts yourmods obj into html table
-  makePlan = (obj, props) => {
-    const makeMod = (year, sem, mod) => (
-      <React.Fragment>
-        {this.makeButton(
-          this.getName(mod),
-          () => this.delMod(this.getName(mod), this.getMCs(mod), year, sem),
-          this.getName(mod)
-        )}
-        {
-          <select>
-            {[5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5, 0.0].map(
-              grade => (
-                <option
-                  key={grade}
-                  onClick={e =>
-                    this.updateGrade(e, year, sem, this.getName(mod))
-                  }
-                >
-                  {grade}
-                </option>
-              )
-            )}
-          </select>
-        }
-      </React.Fragment>
-    );
-
-    const makeSem = (year, sem) => {
-      const mods = this.getMods(obj, year, sem).map(mod =>
-        makeMod(year, sem, mod)
-      );
-      const overload = (
-        <React.Fragment>
-          {this.getOverload(this.state.yourmods, year, sem) ? (
-            <input
-              type="checkbox"
-              onClick={() => this.updateOverload(year, sem)}
-              checked
-            />
-          ) : (
-            <input
-              type="checkbox"
-              onClick={() => this.updateOverload(year, sem)}
-            />
-          )}
-        </React.Fragment>
-      );
-      const result = (
-        <React.Fragment>
-          {this.makeTable("Mods", mods)}
-          {this.makeTable("Overload", overload)}
-        </React.Fragment>
-      );
-      return this.makeTable(sem, result);
-    };
-
-    const makeYear = year => {
-      const result = (
-        <React.Fragment>
-          {makeSem(year, "Sem 1")}
-          {makeSem(year, "Sem 2")}
-        </React.Fragment>
-      );
-      return this.makeTable(year, result);
-    };
-
-    return this.getYears(this.state.yourmods).map(makeYear);
-  };
-
   isValInArr = (val, arr) => arr.find(elem => elem === val) !== undefined;
 
   initMod = (mod, mcs, grade) => ({ Name: mod, MCs: mcs, Grade: grade });
@@ -185,13 +122,6 @@ class App extends Component {
   getMCs = mod => mod["MCs"];
   getGrade = mod => mod["Grade"];
 
-  setGrade = (plan, year, sem, modName, grade) => {
-    const temp = this.copyObj(plan);
-    temp[year][sem]["Mods"].find(mod => this.getName(mod) === modName)[
-      "Grade"
-    ] = grade;
-    return temp;
-  };
   setMods = (plan, year, sem, mods) => {
     const temp = this.copyObj(plan);
     temp[year][sem]["Mods"] = mods;
@@ -222,7 +152,7 @@ class App extends Component {
     // Returns an array of mods up to a specified academic year and semester
     const getCurrMods = (sem = "Sem 2", maxYear = "9999-9999") => {
       const getModsInYear = year => {
-        const plan = this.state.yourmods;
+        const plan = this.state.studentMods;
         if (year < maxYear || (year === maxYear && sem === "Sem 2")) {
           const first = this.getMods(plan, year, "Sem 1").map(this.getName);
           const second = this.getMods(plan, year, "Sem 2").map(this.getName);
@@ -234,7 +164,7 @@ class App extends Component {
         }
       };
 
-      const currmods = this.getYears(this.state.yourmods)
+      const currmods = this.getYears(this.state.studentMods)
         .map(getModsInYear)
         .reduce((acc, arr) => acc.concat(arr), []);
 
@@ -242,7 +172,7 @@ class App extends Component {
     };
 
     // Parses boolTree objs to return a bool value(prerequisites, preclusions)
-    const parseBoolTree = (obj, currmods, isCheckPrereq=false) => {
+    const parseBoolTree = (obj, currmods, isCheckPrereq = false) => {
       if (typeof obj !== "object") {
         return this.isValInArr(obj, currmods);
       } else {
@@ -271,7 +201,12 @@ class App extends Component {
 
     const checkPrereqs = currmods => {
       if (this.state.result.ParsedPrerequisite === undefined) return true;
-      else return parseBoolTree(this.state.result.ParsedPrerequisite, currmods, true);
+      else
+        return parseBoolTree(
+          this.state.result.ParsedPrerequisite,
+          currmods,
+          true
+        );
     };
 
     const checkDuplicates = currmods => {
@@ -279,12 +214,12 @@ class App extends Component {
     };
 
     const checkOverload = () => {
-      if (this.getYear(this.state.yourmods, year) === undefined) {
+      if (this.getYear(this.state.studentMods, year) === undefined) {
         return 0;
       } else {
         const mild = 24;
         const overload = 32;
-        const total = this.getMods(this.state.yourmods, year, sem)
+        const total = this.getMods(this.state.studentMods, year, sem)
           .map(mod => parseInt(this.getMCs(mod)))
           .reduce((acc, mcs) => acc + mcs, 0);
         return total >= overload ? 2 : total >= mild ? 1 : 0;
@@ -298,15 +233,15 @@ class App extends Component {
     if (checkPreclusion(getCurrMods())) {
       this.updateError("Already precluded");
       return undefined;
-    } 
+    }
     if (!checkPrereqs(getCurrMods(sem, year))) {
       this.updateError("Lack prerequisites");
       return undefined;
-    } 
+    }
     if (checkOverload() > 0) {
       const value = checkOverload();
       // Overflows mod
-      const isOverload = this.getOverload(this.state.yourmods, year, sem);
+      const isOverload = this.getOverload(this.state.studentMods, year, sem);
       if (value === 2 && !isOverload) {
         this.updateError("Overload!");
         // Increments year, sem
@@ -323,8 +258,8 @@ class App extends Component {
       }
     }
 
-    var temp = this.copyObj(this.state.yourmods);
-    if (this.getYear(this.state.yourmods, year) === undefined) {
+    var temp = this.copyObj(this.state.studentMods);
+    if (this.getYear(this.state.studentMods, year) === undefined) {
       temp = this.setYear(temp, year, this.initYear());
     }
     var newMods = this.getMods(temp, year, sem).concat(
@@ -332,23 +267,11 @@ class App extends Component {
     );
     temp = this.setMods(temp, year, sem, newMods);
 
-    // Updates yourmods, mcs
+    // Updates studentMods, mcs
     const newMcs = parseInt(this.state.result.ModuleCredit);
     this.setState(state => ({
-      yourmods: temp,
+      studentMods: temp,
       mcs: state.mcs + newMcs
-    }));
-  };
-
-  delMod = (mod, mcs, year, sem) => {
-    var temp = this.copyObj(this.state.yourmods);
-    const newMods = this.getMods(temp, year, sem).filter(
-      elem => this.getName(elem) !== mod
-    );
-    temp = this.setMods(temp, year, sem, newMods);
-    this.setState((state, props) => ({
-      yourmods: temp,
-      mcs: state.mcs - mcs
     }));
   };
 
@@ -470,23 +393,10 @@ class App extends Component {
     });
   };
 
-  updateGrade = (event, year, sem, modName) => {
-    const temp = this.setGrade(
-      this.state.yourmods,
-      year,
-      sem,
-      modName,
-      event.target.value
-    );
-    this.setState({
-      yourmods: temp
-    });
-  };
-
   updateOverload = (year, sem) => {
-    const temp = this.setOverload(this.state.yourmods, year, sem);
+    const temp = this.setOverload(this.state.studentMods, year, sem);
     this.setState({
-      yourmods: temp
+      studentMods: temp
     });
   };
 
@@ -507,11 +417,11 @@ class App extends Component {
   };
 
   handleKeyInput = event => {
-    console.log(event.key);
+    // console.log(event.key);
   };
 
   render() {
-    console.log(this.state.yourmods);
+    console.log(this.state.studentMods);
     const unwantedProps = [
       "LockedModules",
       "ParsedPreclusion",
@@ -536,12 +446,18 @@ class App extends Component {
         : "";
     return (
       <div className="App" onKeyDown={this.handleKeyInput}>
-        <div>
-          Your Mods:
-          {this.makePlan(this.state.yourmods, [])} <br />
-          Your MCs: {this.state.mcs}
-          <br />
-        </div>
+        <StudentPlan
+          copyObj={this.copyObj}
+          getMods={this.getMods}
+          getOverload={this.getOverload}
+          getYears={this.getYears}
+          makeButton={this.makeButton}
+          makeTable={this.makeTable}
+          mcs={this.state.mcs}
+          setAppState={this.setAppState}
+          setMods={this.setMods}
+          studentMods={this.state.studentMods}
+        />
         <div>
           <SearchBar
             addMod={this.addMod}
